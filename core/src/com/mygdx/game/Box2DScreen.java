@@ -30,7 +30,7 @@ public class Box2DScreen extends BaseScreen {
     private OrthographicCamera camera; //cámara 2d;
     private Body objeto01Body, sueloBody, pinchoBody;  // entedad de nuestro mundo, posición, velocidad, no tiene forma
     private Fixture objeto01Fixture, sueloFixture, pinchoFixture; // forma del body
-    private boolean debeSaltar,objeto01Saltando;
+    private boolean debeSaltar,objeto01Saltando,objeto01Vivo=true;
 
 
 
@@ -56,12 +56,21 @@ public class Box2DScreen extends BaseScreen {
             @Override
             public void beginContact(Contact contact) {
                 Fixture fixtureA = contact.getFixtureA(), fixtureB = contact.getFixtureB();
-                if ((fixtureA==objeto01Fixture && fixtureB==sueloFixture) || (fixtureB==objeto01Fixture && fixtureA==sueloFixture)){
+                if  ((fixtureA.getUserData().equals("player") && fixtureB.getUserData().equals("floor"))
+                        || (fixtureB.getUserData().equals("player") && fixtureA.getUserData().equals("floor")))
+                {
                     if (Gdx.input.isTouched()){  // si sigue pulsado continua saltando
                         debeSaltar=true;
                     }
                     objeto01Saltando=false; //no se puede llamar a saltar directamente
                 }
+
+                if  ((fixtureA.getUserData().equals("player") && fixtureB.getUserData().equals("spike"))
+                        || (fixtureB.getUserData().equals("player") && fixtureA.getUserData().equals("spike")))
+                {
+                    objeto01Vivo=false;
+                }
+
 
 
 
@@ -71,10 +80,11 @@ public class Box2DScreen extends BaseScreen {
             @Override
             public void endContact(Contact contact) {
                 Fixture fixtureA = contact.getFixtureA(), fixtureB = contact.getFixtureB();
-                if ((fixtureA==objeto01Fixture && fixtureB==sueloFixture) || (fixtureB==objeto01Fixture && fixtureA==sueloFixture)){
+                if ((fixtureA.getUserData().equals("player") && fixtureB.getUserData().equals("floor"))
+                        || (fixtureB.getUserData().equals("player") && fixtureA.getUserData().equals("floor")))
                     objeto01Saltando=true; //no se puede llamar a saltar directamente
                 }
-            }
+
 
             @Override
             public void preSolve(Contact contact, Manifold oldManifold) {
@@ -106,7 +116,9 @@ public class Box2DScreen extends BaseScreen {
 
         pinchoFixture=createPinchoFixture(pinchoBody);
 
-
+        objeto01Fixture.setUserData("player"); // asocia un objeto a cualquier cosa de Box2d
+        sueloFixture.setUserData("floor");
+        pinchoFixture.setUserData("spike");
 
 
     }
@@ -167,9 +179,13 @@ public class Box2DScreen extends BaseScreen {
         if (Gdx.input.justTouched() && !objeto01Saltando){
             debeSaltar=true;
         }
-        float velocidadY=objeto01Body.getLinearVelocity().y;
-        objeto01Body.setLinearVelocity(8, velocidadY);  //8 m/s horizontal, y mantenemos la actual
-    /*
+        if (objeto01Vivo) {
+            float velocidadY = objeto01Body.getLinearVelocity().y;
+            objeto01Body.setLinearVelocity(8, velocidadY);  //8 m/s horizontal, y mantenemos la actual
+        }
+
+
+            /*
     To update our simulation we need to tell our world to step. Stepping basically updates the world objects through time.
      The first argument is the time-step, or the amount of time you want your world to simulate. In most cases you want this to be a fixed time step. libgdx recommends using either 1/45f (which is 1/45th of a second) or 1/300f (1/300th of a second).
      The other two arguments are velocityIterations and positionIterations. For now we will leave these at 6 and 2,
